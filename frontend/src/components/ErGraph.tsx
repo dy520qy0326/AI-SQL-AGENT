@@ -100,7 +100,7 @@ export function ErGraph({ data, onNodeClick }: ErGraphProps) {
         backgroundColor={isDark ? '#1f2937' : '#ffffff'}
         nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
           const size = 8 + (node.column_count || 1) * 2
-          const label = node.name
+          const label = node.label
           const fontSize = 12 / globalScale
 
           ctx.beginPath()
