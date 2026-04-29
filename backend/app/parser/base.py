@@ -125,6 +125,13 @@ class BaseParser(ABC):
                 fk = self._extract_table_fk(expr)
                 if fk:
                     foreign_keys.append(fk)
+            elif isinstance(expr, exp.Constraint):
+                # CONSTRAINT fk_name FOREIGN KEY (...) REFERENCES ...
+                for inner in expr.args.get("expressions") or []:
+                    if isinstance(inner, exp.ForeignKey):
+                        fk = self._extract_table_fk(inner)
+                        if fk:
+                            foreign_keys.append(fk)
 
         return Table(
             name=table_name,
