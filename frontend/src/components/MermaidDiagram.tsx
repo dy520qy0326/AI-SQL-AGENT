@@ -26,6 +26,7 @@ export function MermaidDiagram({ chart, isDark = false, onError }: MermaidDiagra
         startOnLoad: false,
         theme: isDark ? 'dark' : 'default',
         securityLevel: 'loose',
+        maxTextSize: 500000,
       })
 
       const id = `mermaid-${++idRef.current}`

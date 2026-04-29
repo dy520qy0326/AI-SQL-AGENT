@@ -7,6 +7,10 @@ MERMAID_TEMPLATE = """erDiagram
 {relationships}
 """
 
+# Mermaid erDiagram treats "PK" and "FK" (any case) as keyword tokens.
+# Column names that match these keywords cause parse errors.
+_KEYWORDS = frozenset({"pk", "fk"})
+
 
 async def build_mermaid(
     project_id: str,
@@ -34,7 +38,7 @@ async def build_mermaid(
                 suffix = " PK"
             elif c.name in fk_cols.get(t.id, set()):
                 suffix = " FK"
-            lines.append(f'    {c.data_type} {c.name}{suffix}')
+            lines.append(f'    {c.data_type} {_safe_col(c.name)}{suffix}')
         lines.append("  }")
         entity_lines.append("\n".join(lines))
 
@@ -71,3 +75,16 @@ async def build_mermaid(
 def _mermaid_id(table_id: str) -> str:
     """Generate a safe Mermaid identifier from a UUID."""
     return "t_" + table_id.replace("-", "_")
+
+
+def _safe_col(name: str) -> str:
+    """Escape column names that conflict with Mermaid erDiagram keywords.
+
+    Mermaid's erDiagram tokenizer treats 'pk'/'fk' (any case) as
+    ATTRIBUTE_KEY tokens instead of ATTRIBUTE_WORD, causing parse errors.
+    Appending an underscore avoids the keyword match with minimal visual
+    impact.
+    """
+    if name.lower() in _KEYWORDS:
+        return name + "_"
+    return name

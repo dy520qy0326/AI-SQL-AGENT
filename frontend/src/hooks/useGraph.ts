@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { api, ApiError } from '@/lib/api'
 import type { GraphData } from '@/types/graph'
+
+const BASE = import.meta.env.VITE_API_BASE || ''
 
 interface GraphParams {
   projectId: string
@@ -29,7 +31,14 @@ export function useMermaid(projectId: string, minConfidence = 0) {
 
   return useQuery({
     queryKey: ['mermaid', projectId],
-    queryFn: () => api.get<string>(`/api/projects/${projectId}/mermaid${query}`),
+    queryFn: async () => {
+      const res = await fetch(`${BASE}/api/projects/${projectId}/mermaid${query}`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ detail: res.statusText }))
+        throw new ApiError(res.status, body.detail ?? JSON.stringify(body))
+      }
+      return res.text()
+    },
     enabled: !!projectId,
   })
 }
