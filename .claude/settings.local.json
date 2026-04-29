@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:zhuanlan.zhihu.com)",
+      "Bash(/home/ye/.local/share/pipx/venvs/fastapi/bin/python *)",
+      "Bash(git config *)",
+      "Bash(git remote *)",
+      "Bash(git add *)",
+      "Bash(git rm *)",
+      "Bash(git reset *)"
+    ]
+  }
+}
