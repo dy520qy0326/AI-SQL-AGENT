@@ -1,7 +1,7 @@
 # Plan: 01-parser-core — SQL DDL Parser 核心引擎
 
 ---
-status: REVIEWED
+status: ARCHIVED
 ---
 
 ## 架构影响

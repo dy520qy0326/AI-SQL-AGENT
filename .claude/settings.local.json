@@ -8,7 +8,17 @@
       "Bash(git add *)",
       "Bash(git rm *)",
       "Bash(git reset *)",
-      "Bash(/home/ye/.local/share/pipx/venvs/fastapi/bin/python3 *)"
+      "Bash(/home/ye/.local/share/pipx/venvs/fastapi/bin/python3 *)",
+      "Bash(pipx inject *)",
+      "Bash(sqlite3 /mnt/d/code/AI-SQL-AGENT/backend/data/metadata.db \".schema\")",
+      "Bash(kill %1)",
+      "Bash(curl -s -X POST http://127.0.0.1:8199/api/projects/f0ca5d34-485e-422f-bdca-fd2249d0ac81/upload -H 'Content-Type: application/json' -d '{\"sql_content\": \"CREATE TABLE users \\(id INT PRIMARY KEY, name VARCHAR\\(255\\) NOT NULL, email VARCHAR\\(255\\)\\); CREATE TABLE orders \\(id INT PRIMARY KEY, user_id INT NOT NULL, total DECIMAL\\(10,2\\), FOREIGN KEY \\(user_id\\) REFERENCES users\\(id\\)\\);\"}')",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s \"http://127.0.0.1:8199/api/projects\")",
+      "Bash(curl -s \"http://127.0.0.1:8199/api/projects/nonexistent\")",
+      "Bash(curl -s http://127.0.0.1:8199/health)",
+      "Bash(curl -sv -X POST http://127.0.0.1:8199/api/projects/__TRACKED_VAR__/upload -H 'Content-Type: application/json' -d '{\"sql_content\": \"CREATE TABLE users \\(id INT PRIMARY KEY, name VARCHAR\\(255\\) NOT NULL, email VARCHAR\\(255\\)\\); CREATE TABLE orders \\(id INT PRIMARY KEY, user_id INT NOT NULL, total DECIMAL\\(10,2\\), FOREIGN KEY \\(user_id\\) REFERENCES users\\(id\\)\\);\"}')",
+      "Bash(curl -s -X POST http://127.0.0.1:8199/api/projects/__TRACKED_VAR__/upload -H 'Content-Type: application/json' -d '{\"sql_content\": \"CREATE TABLE users \\(id INT PRIMARY KEY, name VARCHAR\\(255\\) NOT NULL, email VARCHAR\\(255\\)\\); CREATE TABLE orders \\(id INT PRIMARY KEY, user_id INT NOT NULL, total DECIMAL\\(10,2\\), FOREIGN KEY \\(user_id\\) REFERENCES users\\(id\\)\\);\"}')"
     ]
   }
 }

@@ -1,0 +1,216 @@
+from dataclasses import dataclass, field
+from typing import Optional
+
+from sqlalchemy import func, select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.models import (
+    Column as ColumnModel,
+    ForeignKeyModel,
+    Index as IndexModel,
+    Project,
+    Relation,
+    Table,
+)
+from app.parser.models import ParseResult
+
+
+@dataclass
+class RelationData:
+    source_table_id: str
+    source_columns: list[str]
+    target_table_id: str
+    target_columns: list[str]
+    relation_type: str
+    confidence: float
+    source: str | None = None
+
+
+class Repository:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    # ── Project ──────────────────────────────────────────────
+
+    async def create_project(self, name: str, description: str | None, dialect: str) -> Project:
+        project = Project(name=name, description=description, dialect=dialect)
+        self.db.add(project)
+        await self.db.flush()
+        return project
+
+    async def get_project(self, project_id: str) -> dict | None:
+        result = await self.db.execute(
+            select(
+                Project,
+                func.count(func.distinct(Table.id)).label("table_count"),
+                func.count(func.distinct(Relation.id)).label("relation_count"),
+            )
+            .outerjoin(Table, Table.project_id == Project.id)
+            .outerjoin(Relation, Relation.project_id == Project.id)
+            .where(Project.id == project_id)
+            .group_by(Project.id)
+        )
+        row = result.one_or_none()
+        if row is None:
+            return None
+        return {
+            **row.Project.__dict__,
+            "table_count": row.table_count,
+            "relation_count": row.relation_count,
+        }
+
+    async def list_projects(self, page: int = 1, size: int = 20) -> tuple[list[dict], int]:
+        count_q = select(func.count(Project.id))
+        total = (await self.db.execute(count_q)).scalar() or 0
+
+        q = (
+            select(
+                Project,
+                func.count(func.distinct(Table.id)).label("table_count"),
+                func.count(func.distinct(Relation.id)).label("relation_count"),
+            )
+            .outerjoin(Table, Table.project_id == Project.id)
+            .outerjoin(Relation, Relation.project_id == Project.id)
+            .group_by(Project.id)
+            .order_by(Project.created_at.desc())
+            .offset((page - 1) * size)
+            .limit(size)
+        )
+        rows = (await self.db.execute(q)).all()
+        projects = []
+        for row in rows:
+            projects.append({
+                **row.Project.__dict__,
+                "table_count": row.table_count,
+                "relation_count": row.relation_count,
+            })
+        return projects, total
+
+    async def delete_project(self, project_id: str) -> bool:
+        result = await self.db.execute(delete(Project).where(Project.id == project_id))
+        await self.db.flush()
+        return result.rowcount > 0
+
+    # ── Parse Result persistence ─────────────────────────────
+
+    async def save_parse_result(self, project_id: str, parse_result: ParseResult) -> list[Table]:
+        """Batch-write parsed tables/columns/indexes/fks into the project. Returns created Table ORM objects."""
+        # Remove existing tables for this project (cascade handles children)
+        await self.db.execute(delete(Table).where(Table.project_id == project_id))
+
+        tables = []
+        for pt in parse_result.tables:
+            table = Table(
+                project_id=project_id,
+                schema_name=pt.schema_,
+                name=pt.name,
+                comment=pt.comment or None,
+            )
+            self.db.add(table)
+            await self.db.flush()
+
+            for i, pc in enumerate(pt.columns):
+                col = ColumnModel(
+                    table_id=table.id,
+                    name=pc.name,
+                    ordinal_position=i,
+                    data_type=pc.type,
+                    length=pc.length,
+                    nullable=pc.nullable,
+                    default_value=pc.default,
+                    is_primary_key=pc.primary_key,
+                    comment=pc.comment or None,
+                )
+                self.db.add(col)
+
+            for pidx in pt.indexes:
+                idx = IndexModel(
+                    table_id=table.id,
+                    name=pidx.name,
+                    unique=pidx.unique,
+                    columns=pidx.columns,
+                )
+                self.db.add(idx)
+
+            for pfk in pt.foreign_keys:
+                fk = ForeignKeyModel(
+                    table_id=table.id,
+                    columns=pfk.columns,
+                    ref_table_name=pfk.ref_table,
+                    ref_columns=pfk.ref_columns,
+                    constraint_name=None,
+                )
+                self.db.add(fk)
+
+            tables.append(table)
+
+        await self.db.flush()
+        return tables
+
+    # ── Table queries ────────────────────────────────────────
+
+    async def get_tables(self, project_id: str) -> list[Table]:
+        result = await self.db.execute(
+            select(Table).where(Table.project_id == project_id).order_by(Table.name)
+        )
+        return list(result.scalars().all())
+
+    async def get_table_detail(self, table_id: str) -> Table | None:
+        result = await self.db.execute(
+            select(Table).where(Table.id == table_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_project_tables_dict(self, project_id: str) -> dict[str, Table]:
+        """Return all project tables keyed by name (lowercase) for fast lookup."""
+        tables = await self.get_tables(project_id)
+        return {t.name.lower(): t for t in tables}
+
+    # ── Relation persistence ─────────────────────────────────
+
+    async def save_relations(self, project_id: str, relations: list[RelationData]) -> list[Relation]:
+        # Delete existing relations for this project and re-insert
+        await self.db.execute(delete(Relation).where(Relation.project_id == project_id))
+
+        orm_relations = []
+        for r in relations:
+            rel = Relation(
+                project_id=project_id,
+                source_table_id=r.source_table_id,
+                source_columns=r.source_columns,
+                target_table_id=r.target_table_id,
+                target_columns=r.target_columns,
+                relation_type=r.relation_type,
+                confidence=r.confidence,
+                source=r.source,
+            )
+            self.db.add(rel)
+            orm_relations.append(rel)
+
+        await self.db.flush()
+        return orm_relations
+
+    async def get_relations(
+        self,
+        project_id: str,
+        type_filter: str | None = None,
+        min_confidence: float = 0.0,
+    ) -> list[Relation]:
+        q = select(Relation).where(Relation.project_id == project_id)
+        if type_filter:
+            q = q.where(Relation.relation_type == type_filter)
+        if min_confidence > 0:
+            q = q.where(Relation.confidence >= min_confidence)
+        q = q.order_by(Relation.confidence.desc())
+        result = await self.db.execute(q)
+        return list(result.scalars().all())
+
+    # ── ForeignKey queries (for detector) ────────────────────
+
+    async def get_project_foreign_keys(self, project_id: str) -> list[ForeignKeyModel]:
+        result = await self.db.execute(
+            select(ForeignKeyModel)
+            .join(Table, ForeignKeyModel.table_id == Table.id)
+            .where(Table.project_id == project_id)
+        )
+        return list(result.scalars().all())

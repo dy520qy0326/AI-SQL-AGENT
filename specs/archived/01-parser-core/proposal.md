@@ -1,7 +1,7 @@
 ---
 name: 01-parser-core
 title: SQL DDL Parser 核心引擎
-status: ACTIVE
+status: ARCHIVED
 created: 2026-04-29
 ---
 

@@ -1,5 +1,5 @@
 ---
-status: REVIEWED
+status: ARCHIVED
 ---
 
 # Tasks: 01-parser-core — SQL DDL Parser 核心引擎

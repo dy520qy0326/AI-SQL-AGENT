@@ -1,0 +1,26 @@
+import os
+from pathlib import Path
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
+
+DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
+DATABASE_URL = f"sqlite+aiosqlite:///{DATA_DIR / 'metadata.db'}"
+
+engine = create_async_engine(DATABASE_URL, echo=False)
+async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+async def get_db():
+    async with async_session() as session:
+        yield session
+
+
+async def init_db():
+    os.makedirs(DATA_DIR, exist_ok=True)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all, checkfirst=True)
