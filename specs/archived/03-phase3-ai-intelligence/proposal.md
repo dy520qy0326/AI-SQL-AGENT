@@ -1,7 +1,7 @@
 ---
 name: 03-phase3-ai-intelligence
 title: Phase 3 — AI 智能增强
-status: ACTIVE
+status: ARCHIVED
 created: 2026-04-29
 ---
 

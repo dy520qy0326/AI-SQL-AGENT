@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-from sqlalchemy import func, select, delete
+from sqlalchemy import func, select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import (
@@ -13,7 +13,9 @@ from app.db.models import (
     GeneratedDoc,
     Index as IndexModel,
     Project,
+    ProjectVersion,
     Relation,
+    SchemaDiff,
     Table,
 )
 from app.parser.models import ParseResult
@@ -365,3 +367,83 @@ class Repository:
         )
         await self.db.flush()
         return result.rowcount > 0
+
+    # ── Version CRUD ──────────────────────────────────────────
+
+    async def create_version(self, project_id: str, version_tag: str | None, file_hash: str, parse_result: dict) -> ProjectVersion:
+        if version_tag is None:
+            from datetime import datetime, timezone
+
+            today = datetime.now(timezone.utc).strftime("%Y%m%d")
+            count_q = select(func.count(ProjectVersion.id)).where(
+                ProjectVersion.project_id == project_id,
+                ProjectVersion.version_tag.like(f"{today}-%"),
+            )
+            count = (await self.db.execute(count_q)).scalar() or 0
+            version_tag = f"{today}-{count + 1}"
+
+        version = ProjectVersion(
+            project_id=project_id,
+            version_tag=version_tag,
+            file_hash=file_hash,
+            parse_result=parse_result,
+        )
+        self.db.add(version)
+        await self.db.flush()
+        return version
+
+    async def list_versions(self, project_id: str) -> list[ProjectVersion]:
+        result = await self.db.execute(
+            select(ProjectVersion)
+            .where(ProjectVersion.project_id == project_id)
+            .order_by(ProjectVersion.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def get_version(self, version_id: str) -> ProjectVersion | None:
+        result = await self.db.execute(
+            select(ProjectVersion).where(ProjectVersion.id == version_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def delete_version(self, version_id: str) -> bool:
+        result = await self.db.execute(
+            delete(ProjectVersion).where(ProjectVersion.id == version_id)
+        )
+        await self.db.flush()
+        return result.rowcount > 0
+
+    # ── Diff CRUD ─────────────────────────────────────────────
+
+    async def create_diff(self, project_id: str, old_version_id: str, new_version_id: str, diff_data: dict, summary: str | None = None, breaking_changes: bool = False) -> SchemaDiff:
+        diff = SchemaDiff(
+            project_id=project_id,
+            old_version_id=old_version_id,
+            new_version_id=new_version_id,
+            diff_data=diff_data,
+            summary=summary,
+            breaking_changes=breaking_changes,
+        )
+        self.db.add(diff)
+        await self.db.flush()
+        return diff
+
+    async def get_diff(self, diff_id: str) -> SchemaDiff | None:
+        result = await self.db.execute(
+            select(SchemaDiff).where(SchemaDiff.id == diff_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def list_diffs(self, project_id: str) -> list[SchemaDiff]:
+        result = await self.db.execute(
+            select(SchemaDiff)
+            .where(SchemaDiff.project_id == project_id)
+            .order_by(SchemaDiff.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def update_diff_summary(self, diff_id: str, summary: str) -> None:
+        await self.db.execute(
+            update(SchemaDiff).where(SchemaDiff.id == diff_id).values(summary=summary)
+        )
+        await self.db.flush()

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.engine import Base
@@ -35,6 +35,13 @@ class Project(Base):
     )
     docs: Mapped[list["GeneratedDoc"]] = relationship(
         "GeneratedDoc", cascade="all, delete-orphan", lazy="selectin",
+    )
+    versions: Mapped[list["ProjectVersion"]] = relationship(
+        "ProjectVersion", cascade="all, delete-orphan", lazy="selectin",
+    )
+    diffs: Mapped[list["SchemaDiff"]] = relationship(
+        "SchemaDiff", cascade="all, delete-orphan", lazy="selectin",
+        foreign_keys="SchemaDiff.project_id",
     )
 
 
@@ -152,4 +159,28 @@ class GeneratedDoc(Base):
     title: Mapped[str] = mapped_column(String(500), nullable=False)
     content: Mapped[str] = mapped_column(String, nullable=False)
     ai_enhanced: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
+class ProjectVersion(Base):
+    __tablename__ = "project_versions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id", ondelete="CASCADE"))
+    version_tag: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    file_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    parse_result: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
+class SchemaDiff(Base):
+    __tablename__ = "schema_diffs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id", ondelete="CASCADE"))
+    old_version_id: Mapped[str] = mapped_column(String(36), ForeignKey("project_versions.id", ondelete="CASCADE"))
+    new_version_id: Mapped[str] = mapped_column(String(36), ForeignKey("project_versions.id", ondelete="CASCADE"))
+    diff_data: Mapped[dict] = mapped_column(JSON, nullable=False)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    breaking_changes: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)

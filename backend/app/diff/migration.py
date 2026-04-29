@@ -1,0 +1,240 @@
+import logging
+from typing import Any
+
+logger = logging.getLogger(__name__)
+
+
+def _col_def(col: dict, dialect: str) -> str:
+    """Build a single column definition string."""
+    name = col["name"]
+    col_type = col.get("type", "")
+    length = col.get("length")
+    nullable = col.get("nullable", True)
+    default = col.get("default")
+    primary_key = col.get("primary_key", False)
+    auto_inc = col.get("auto_increment", False)
+
+    # Type with length
+    type_str = col_type
+    if length:
+        type_str = f"{col_type}({length})"
+
+    parts = [name, type_str]
+
+    if not nullable:
+        parts.append("NOT NULL")
+    if default is not None and default != "":
+        # Quote string defaults, keep numeric as-is
+        try:
+            float(default)
+            parts.append(f"DEFAULT {default}")
+        except (ValueError, TypeError):
+            parts.append(f"DEFAULT '{default}'")
+    if auto_inc and dialect == "mysql":
+        parts.append("AUTO_INCREMENT")
+    if primary_key:
+        parts.append("PRIMARY KEY")
+
+    return " ".join(parts)
+
+
+def _create_table_sql(table: dict, dialect: str) -> str:
+    """Generate CREATE TABLE for a new table."""
+    cols = table.get("columns", [])
+    indexes = table.get("indexes", [])
+    foreign_keys = table.get("foreign_keys", [])
+
+    col_lines = []
+    for c in cols:
+        col_lines.append(f"    {_col_def(c, dialect)}")
+
+    # Primary key constraint (if not inline)
+    pk_cols = [c["name"] for c in cols if c.get("primary_key")]
+    if pk_cols:
+        col_lines.append(f"    PRIMARY KEY ({', '.join(pk_cols)})")
+
+    # Foreign keys
+    for fk in foreign_keys:
+        ref_name = fk.get("ref_table", "")
+        ref_cols = ", ".join(fk.get("ref_columns", []))
+        src_cols = ", ".join(fk.get("columns", []))
+        col_lines.append(f"    FOREIGN KEY ({src_cols}) REFERENCES {ref_name}({ref_cols})")
+
+    cols_sql = ",\n".join(col_lines)
+    return f"CREATE TABLE {table['name']} (\n{cols_sql}\n);"
+
+
+def _drop_table_sql(table_name: str) -> str:
+    return f"DROP TABLE IF EXISTS {table_name};"
+
+
+def _add_column_sql(table: str, col: dict, dialect: str) -> str:
+    return f"ALTER TABLE {table} ADD COLUMN {_col_def(col, dialect)};"
+
+
+def _drop_column_sql(table: str, col_name: str) -> str:
+    return f"ALTER TABLE {table} DROP COLUMN {col_name};"
+
+
+def _modify_column_sql(table: str, field: str, after: dict, dialect: str) -> str:
+    """Generate ALTER TABLE for a modified column."""
+    # Reconstruct the column definition from 'after' state.
+    # The 'after' dict has: type, length, nullable, default
+    col_type = after.get("type", "")
+    length = after.get("length")
+    nullable = after.get("nullable", True)
+    default = after.get("default")
+
+    type_str = col_type
+    if length:
+        type_str = f"{col_type}({length})"
+
+    if dialect == "postgresql":
+        clauses = [f"ALTER COLUMN {field} TYPE {type_str}"]
+        if nullable is False:
+            clauses.append(f"ALTER COLUMN {field} SET NOT NULL")
+        elif nullable is True:
+            clauses.append(f"ALTER COLUMN {field} DROP NOT NULL")
+        if default is not None:
+            try:
+                float(default)
+                def_val = default
+            except (ValueError, TypeError):
+                def_val = f"'{default}'"
+            clauses.append(f"ALTER COLUMN {field} SET DEFAULT {def_val}")
+        return f"ALTER TABLE {table}\n  " + ",\n  ".join(clauses) + ";"
+    else:
+        # MySQL
+        nullable_str = "NOT NULL" if not nullable else "NULL"
+        default_str = ""
+        if default is not None and default != "":
+            try:
+                float(default)
+                default_str = f"DEFAULT {default}"
+            except (ValueError, TypeError):
+                default_str = f"DEFAULT '{default}'"
+        def_clause = f" {type_str} {nullable_str}"
+        if default_str:
+            def_clause += f" {default_str}"
+        return f"ALTER TABLE {table} MODIFY COLUMN {field}{def_clause};"
+
+
+def _create_index_sql(idx: dict, table: str) -> str:
+    name = idx.get("name", "")
+    unique = "UNIQUE " if idx.get("unique") else ""
+    cols = ", ".join(idx.get("columns", []))
+    return f"CREATE {unique}INDEX {name} ON {table}({cols});"
+
+
+def _drop_index_sql(idx_name: str, table: str, dialect: str) -> str:
+    if dialect == "postgresql":
+        return f"DROP INDEX IF EXISTS {idx_name};"
+    return f"DROP INDEX {idx_name} ON {table};"
+
+
+def generate_alter_scripts(diff_data: dict, dialect: str = "mysql") -> str:
+    """Generate SQL migration script from diff result dict.
+
+    Args:
+        diff_data: A DiffResult converted to dict (via model_dump or dataclass dict).
+        dialect: SQL dialect ("mysql" or "postgresql").
+
+    Returns:
+        Complete SQL migration script as a string.
+    """
+    dialect = dialect.lower()
+    lines = [
+        f"-- Migration generated by AI SQL Agent",
+        f"-- Dialect: {dialect}",
+        "--",
+    ]
+
+    breaking = diff_data.get("breaking_details", [])
+    if breaking:
+        lines.append("-- --- destructive changes ---")
+        for b in breaking:
+            lines.append(f"-- WARNING: {b}")
+        lines.append("-- ---------------------------")
+        lines.append("")
+
+    # Removed tables
+    for t in diff_data.get("tables_removed", []):
+        lines.append(_drop_table_sql(t["name"]))
+        lines.append("")
+
+    # Removed relations (drop FK first)
+    for r in diff_data.get("relations_removed", []):
+        rel = r.get("relation", {})
+        table = r.get("table", "")
+        cols = rel.get("columns", [])
+        constraint = rel.get("constraint_name", "")
+        if constraint:
+            if dialect == "postgresql":
+                lines.append(f"ALTER TABLE {table} DROP CONSTRAINT IF EXISTS {constraint};")
+            else:
+                lines.append(f"ALTER TABLE {table} DROP FOREIGN KEY {constraint};")
+        lines.append("")
+
+    # Dropped indexes
+    for idx in diff_data.get("indexes_removed", []):
+        lines.append(_drop_index_sql(idx["index"]["name"], idx["table"], dialect))
+        lines.append("")
+
+    # Removed fields
+    for f in diff_data.get("fields_removed", []):
+        lines.append(_drop_column_sql(f["table"], f["field"]))
+    if diff_data.get("fields_removed"):
+        lines.append("")
+
+    # Modified fields
+    for f in diff_data.get("fields_modified", []):
+        lines.append(_modify_column_sql(f["table"], f["field"], f["after"], dialect))
+    if diff_data.get("fields_modified"):
+        lines.append("")
+
+    # Added fields
+    for f in diff_data.get("fields_added", []):
+        lines.append(_add_column_sql(f["table"], f["definition"], dialect))
+    if diff_data.get("fields_added"):
+        lines.append("")
+
+    # New tables
+    for t in diff_data.get("tables_added", []):
+        lines.append(_create_table_sql(t, dialect))
+        lines.append("")
+
+    # Added indexes
+    for idx in diff_data.get("indexes_added", []):
+        lines.append(_create_index_sql(idx["index"], idx["table"]))
+    if diff_data.get("indexes_added"):
+        lines.append("")
+
+    # Added relations (FK)
+    for r in diff_data.get("relations_added", []):
+        rel = r.get("relation", {})
+        table = r.get("table", "")
+        cols = rel.get("columns", [])
+        ref_table = rel.get("ref_table", "")
+        ref_cols = rel.get("ref_columns", [])
+        src_cols = ", ".join(cols)
+        tgt_cols = ", ".join(ref_cols)
+        constraint = rel.get("constraint_name", "")
+        fk_def = f"ALTER TABLE {table} ADD FOREIGN KEY ({src_cols}) REFERENCES {ref_table}({tgt_cols})"
+        if constraint:
+            fk_def += f" CONSTRAINT {constraint}"
+        lines.append(fk_def + ";")
+    if diff_data.get("relations_added"):
+        lines.append("")
+
+    text = "\n".join(lines).strip()
+    # Only header lines and no changes → report no-op
+    has_changes = any(
+        diff_data.get(key)
+        for key in ("tables_added", "tables_removed", "fields_added",
+                     "fields_removed", "fields_modified", "indexes_added",
+                     "indexes_removed", "relations_added", "relations_removed")
+    )
+    if not has_changes and not diff_data.get("breaking_details"):
+        return "-- No schema changes detected."
+
+    return text

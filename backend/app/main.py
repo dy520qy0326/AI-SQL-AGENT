@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api.ai import router as ai_router
+from app.api.diff import router as diff_router
 from app.api.graph import router as graph_router
 from app.api.projects import router as projects_router
 from app.api.relations import router as relations_router
@@ -24,6 +25,7 @@ app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=li
 
 app.include_router(projects_router)
 app.include_router(tables_router)
+app.include_router(diff_router)
 app.include_router(relations_router)
 app.include_router(graph_router)
 app.include_router(ai_router)
