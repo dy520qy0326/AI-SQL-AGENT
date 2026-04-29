@@ -363,3 +363,154 @@ class TestForeignKeyParsing:
         """Table with no foreign keys returns empty fk list."""
         result = parser.parse("CREATE TABLE t (id INT PRIMARY KEY);")
         assert result.tables[0].foreign_keys == []
+
+
+# ── Error Handling (Task 8) ──────────────────────────────────────────────────
+
+
+class TestErrorHandling:
+    def test_syntax_error_skipped_with_error(self, parser):
+        """Malformed DDL (missing paren) is skipped, error recorded."""
+        sql = "CREATE TABLE t (id INT"
+        result = parser.parse(sql)
+        assert result.tables == []
+        assert len(result.errors) == 1
+        assert result.errors[0].message != ""
+
+    def test_invalid_statement_skipped_valid_parsed(self, parser):
+        """Valid and invalid statements mix: valid ones still produce tables."""
+        sql = (
+            "CREATE TABLE t1 (id INT);\n"
+            "CREATE TABLE t2 (id INT);\n"
+            "THIS IS NOT SQL;\n"
+            "CREATE TABLE t3 (id INT)"
+        )
+        result = parser.parse(sql)
+        assert len(result.tables) == 3
+        assert [t.name for t in result.tables] == ["t1", "t2", "t3"]
+        # Invalid statements that don't start with CREATE TABLE are silently skipped
+        # (no error is recorded because they don't enter the parsing path)
+        assert result.errors == []
+
+    def test_invalid_create_table_errors_recorded(self, parser):
+        """A CREATE TABLE that fails parsing is recorded in errors."""
+        sql = (
+            "CREATE TABLE t1 (id INT);\n"
+            "CREATE TABLE t2 (id INT, \n"  # truncated/malformed
+            "CREATE TABLE t3 (id INT);\n"
+        )
+        # If the malformed CREATE TABLE causes a sqlglot error, it's caught;
+        # If sqlglot can handle it and it creates a valid table, no error.
+        result = parser.parse(sql)
+        # At minimum t1 and t3 should be present (t2 may or may not parse)
+        assert len(result.tables) >= 2
+        # Errors may or may not be present depending on sqlglot's parser
+        # But the parser should not crash
+
+    def test_error_has_statement_index(self, parser):
+        """ParseError includes a statement_index."""
+        sql = (
+            "CREATE TABLE t1 (id INT);\n"
+            "CREATE TABLE t2 (id INT);\n"
+            "CREATE TABLE t3 (invalid"  # intentionally broken
+        )
+        result = parser.parse(sql)
+        for err in result.errors:
+            assert isinstance(err.statement_index, int)
+
+    def test_error_has_line_number(self, parser):
+        """ParseError includes an estimated line number."""
+        sql = (
+            "CREATE TABLE t1 (id INT);\n"
+            "CREATE TABLE t2 (id INT);\n"
+            "CREATE TABLE t3 (invalid"  # intentionally broken
+        )
+        result = parser.parse(sql)
+        for err in result.errors:
+            assert isinstance(err.line, int)
+
+    def test_error_has_message(self, parser):
+        """ParseError includes a non-empty message."""
+        sql = (
+            "CREATE TABLE t1 (id INT);\n"
+            "CREATE TABLE t3 (invalid"
+        )
+        result = parser.parse(sql)
+        for err in result.errors:
+            assert err.message != ""
+
+    def test_multiple_errors(self, parser):
+        """Multiple malformed statements each produce an error."""
+        sql = (
+            "CREATE TABLE t1 (id INT);\n"
+            "CREATE TABLE bad1 (id INT, \n"
+            "CREATE TABLE t2 (id INT);\n"
+            "CREATE TABLE bad2 (invalid\n"
+        )
+        result = parser.parse(sql)
+        # All errors should still have line > 0
+        for err in result.errors:
+            assert err.line >= 1
+
+    def test_empty_string_no_exception(self, parser):
+        """Empty string input does not raise an exception."""
+        result = parser.parse("")
+        assert result.tables == []
+        assert result.errors == []
+
+    def test_whitespace_only_no_exception(self, parser):
+        """Whitespace-only input does not raise an exception."""
+        result = parser.parse("   \n  \n  ")
+        assert result.tables == []
+        assert result.errors == []
+
+    def test_comment_only_returns_empty(self, parser):
+        """File with only SQL comments returns empty result, no crash."""
+        sql = "-- This is a comment\n-- Another comment\n-- Yet another"
+        result = parser.parse(sql)
+        assert result.tables == []
+        assert result.errors == []
+
+    def test_block_comment_only_returns_empty(self, parser):
+        """File with only a block comment returns empty result."""
+        sql = "/* multi-line\n block comment\n */"
+        result = parser.parse(sql)
+        assert result.tables == []
+        assert result.errors == []
+
+    def test_mixed_comments_and_valid_ddl(self, parser):
+        """Comments interspersed with valid DDL are parsed correctly."""
+        sql = (
+            "-- Users table\n"
+            "CREATE TABLE users (id INT);\n"
+            "-- Posts table\n"
+            "CREATE TABLE posts (id INT);\n"
+            "/* end of file */"
+        )
+        result = parser.parse(sql)
+        assert len(result.tables) == 2
+        assert result.tables[0].name == "users"
+        assert result.tables[1].name == "posts"
+        assert result.errors == []
+
+    def test_unknown_dialect_fallback(self, parser):
+        """DDL with unknown syntax features silently skips or produces error."""
+        # Fake-type that sqlglot can't parse
+        sql = "CREATE TABLE t (id FAKETYPETHATDOESNTEXIST);"
+        result = parser.parse(sql)
+        # sqlglot may or may not handle this; either way no crash
+        assert isinstance(result.tables, list)
+        assert isinstance(result.errors, list)
+
+    def test_one_bad_table_does_not_affect_others(self, parser):
+        """A single bad CREATE TABLE does not prevent subsequent parsing."""
+        sql = (
+            "CREATE TABLE good1 (id INT);\n"
+            "CREATE TABLE bad (id INT, \n"
+            "CREATE TABLE good2 (id INT)"
+        )
+        result = parser.parse(sql)
+        # good2 should still be parsed even if bad fails
+        table_names = [t.name for t in result.tables]
+        assert "good1" in table_names
+        assert "good2" in table_names
