@@ -20,7 +20,10 @@
       "Bash(curl -sv -X POST http://127.0.0.1:8199/api/projects/__TRACKED_VAR__/upload -H 'Content-Type: application/json' -d '{\"sql_content\": \"CREATE TABLE users \\(id INT PRIMARY KEY, name VARCHAR\\(255\\) NOT NULL, email VARCHAR\\(255\\)\\); CREATE TABLE orders \\(id INT PRIMARY KEY, user_id INT NOT NULL, total DECIMAL\\(10,2\\), FOREIGN KEY \\(user_id\\) REFERENCES users\\(id\\)\\);\"}')",
       "Bash(curl -s -X POST http://127.0.0.1:8199/api/projects/__TRACKED_VAR__/upload -H 'Content-Type: application/json' -d '{\"sql_content\": \"CREATE TABLE users \\(id INT PRIMARY KEY, name VARCHAR\\(255\\) NOT NULL, email VARCHAR\\(255\\)\\); CREATE TABLE orders \\(id INT PRIMARY KEY, user_id INT NOT NULL, total DECIMAL\\(10,2\\), FOREIGN KEY \\(user_id\\) REFERENCES users\\(id\\)\\);\"}')",
       "Bash(pipx list *)",
-      "Bash(curl -s -X POST http://localhost:8199/api/projects/a070e165-88c4-4975-9f70-cb87763e9646/diff -H 'Content-Type: application/json' -d '{\"old_version_id\":\"e3c783d6-7a2d-456c-81e2-d9ae1c5cb3b3\",\"new_version_id\":\"5f88548e-bb72-48f8-abdd-81acbf47e774\"}')"
+      "Bash(curl -s -X POST http://localhost:8199/api/projects/a070e165-88c4-4975-9f70-cb87763e9646/diff -H 'Content-Type: application/json' -d '{\"old_version_id\":\"e3c783d6-7a2d-456c-81e2-d9ae1c5cb3b3\",\"new_version_id\":\"5f88548e-bb72-48f8-abdd-81acbf47e774\"}')",
+      "Bash(npm run *)",
+      "Bash(npm uninstall *)",
+      "Bash(npm install *)"
     ]
   }
 }

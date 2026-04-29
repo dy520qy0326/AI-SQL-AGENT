@@ -103,28 +103,66 @@ prd/                   # 原始 PRD（需求来源，保持不变）
 
 ## 开发环境
 
-### 包管理
+### Python 虚拟环境
 
-使用 `pipx` 替代 `pip` 管理 Python 依赖。所有项目依赖安装在 pipx 管理的 `fastapi` venv 中。
+项目使用项目根目录的 `.venv/`（Python venv）管理所有 Python 依赖。
 
 ```bash
-# 添加新依赖
-pipx inject fastapi <package-name>
+VENV=/mnt/e/AI-SQL-AGENT/.venv
 
-# 运行项目
-pipx run --venv fastapi uvicorn app.main:app --port 8199
+# 启动后端
+cd /mnt/e/AI-SQL-AGENT/backend && $VENV/bin/uvicorn app.main:app --port 8199
 
-# 或直接使用 venv 的 Python
-/home/ye/.local/share/pipx/venvs/fastapi/bin/python -m uvicorn app.main:app --port 8199
+# 安装新依赖
+$VENV/bin/pip install <package-name>
+
+# 运行 Python 脚本
+$VENV/bin/python script.py
+
+# 运行测试
+$VENV/bin/python -m pytest tests/ -x -q
 ```
 
-### 已安装依赖
+> ⚠️ 不要使用 `pipx` 或系统 Python 启动后端。依赖安装在项目 `.venv/` 中，`pipx inject fastapi` 创建的 venv 不存在。
 
-- fastapi, sqlglot, pydantic-settings（注入到 fastapi venv）
-- uvicorn（注入到 fastapi venv）
+### 前端
+
+```bash
+cd /mnt/e/AI-SQL-AGENT/frontend
+npm run dev -- --host 0.0.0.0   # 开发服务器（端口 5173）
+npm run build                    # 生产构建
+```
+
+### 数据库
+
+后端使用 SQLite 数据库，文件位于 `backend/data/metadata.db`。无需额外配置数据库服务。
+
+```bash
+# 查看数据库表和数据量
+$VENV/bin/python -c "
+import sqlite3
+conn = sqlite3.connect('/mnt/e/AI-SQL-AGENT/backend/data/metadata.db')
+for row in conn.execute(\"SELECT name FROM sqlite_master WHERE type='table'\"):
+    cnt = conn.execute(f'SELECT COUNT(*) FROM \"{row[0]}\"').fetchone()[0]
+    print(f'{row[0]}: {cnt}')
+"
+
+# 清空所有数据
+$VENV/bin/python -c "
+import sqlite3
+conn = sqlite3.connect('/mnt/e/AI-SQL-AGENT/backend/data/metadata.db')
+conn.execute('PRAGMA foreign_keys = OFF')
+tables = ['conversation_messages','ai_cache','schema_diffs','project_versions',
+          'generated_docs','conversation_sessions','foreign_keys','indexes',
+          'columns','relations','tables','projects']
+for t in tables:
+    conn.execute(f'DELETE FROM \"{t}\"')
+conn.commit()
+conn.close()
+"
+```
 
 ## 项目状态
 
 - 技术栈：FastAPI (Python) + sqlglot + React + Claude API
-- 当前阶段：Phase 1（核心解析引擎）— Task 1 完成
-- 包管理：pipx（注入到 fastapi venv）
+- 包管理：`.venv/`（项目根目录 Python venv）

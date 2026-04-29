@@ -56,7 +56,7 @@ async def create_project(body: ProjectCreate, db: AsyncSession = Depends(get_db)
 
 
 @router.get("", response_model=ProjectListResponse)
-async def list_projects(page: int = 1, size: int = 20, db: AsyncSession = Depends(get_db)):
+async def list_projects(page: int = 1, size: int = 12, db: AsyncSession = Depends(get_db)):
     repo = Repository(db)
     items, total = await repo.list_projects(page=page, size=size)
     return ProjectListResponse(
