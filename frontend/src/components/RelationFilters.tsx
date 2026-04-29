@@ -9,11 +9,11 @@ export function RelationFilters({ type, onTypeChange, minConfidence, onConfidenc
   return (
     <div className="flex flex-wrap items-center gap-4">
       <div className="flex items-center gap-2">
-        <label className="text-xs text-gray-500">关系类型</label>
+        <label className="text-xs text-gray-500 dark:text-gray-400">关系类型</label>
         <select
           value={type}
           onChange={(e) => onTypeChange(e.target.value)}
-          className="rounded-md border border-gray-300 px-2 py-1.5 text-xs outline-none focus:border-blue-500"
+          className="rounded-md border border-gray-300 px-2 py-1.5 text-xs outline-none focus:border-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
         >
           <option value="">全部</option>
           <option value="FOREIGN_KEY">外键</option>
@@ -22,7 +22,7 @@ export function RelationFilters({ type, onTypeChange, minConfidence, onConfidenc
         </select>
       </div>
       <div className="flex items-center gap-2">
-        <label className="text-xs text-gray-500">置信度 ≥ {minConfidence}</label>
+        <label className="text-xs text-gray-500 dark:text-gray-400">置信度 ≥ {minConfidence}</label>
         <input
           type="range"
           min={0}

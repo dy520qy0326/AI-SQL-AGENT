@@ -37,7 +37,7 @@ export function ChatInput({ onSend, onStop, disabled, isStreaming }: ChatInputPr
   }
 
   return (
-    <div className="flex items-end gap-2 rounded-lg border bg-white p-3">
+    <div className="flex items-end gap-2 rounded-lg border bg-white p-3 dark:border-gray-600 dark:bg-gray-800">
       <textarea
         ref={textareaRef}
         value={value}
@@ -46,7 +46,7 @@ export function ChatInput({ onSend, onStop, disabled, isStreaming }: ChatInputPr
         placeholder="输入关于数据库结构的问题..."
         rows={2}
         disabled={disabled}
-        className="min-h-[44px] flex-1 resize-none text-sm outline-none disabled:bg-gray-50"
+        className="min-h-[44px] flex-1 resize-none text-sm outline-none disabled:bg-gray-50 dark:bg-transparent dark:text-gray-100 dark:placeholder-gray-400"
       />
       <button
         onClick={isStreaming ? onStop : handleSubmit}

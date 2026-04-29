@@ -13,7 +13,7 @@ export function TableDetail() {
     <div>
       <Link
         to={`/projects/${id}/tables`}
-        className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 no-underline hover:text-gray-700"
+        className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 no-underline hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
       >
         <ArrowLeft className="h-4 w-4" />
         返回表列表
@@ -35,30 +35,30 @@ export function TableDetail() {
       {table && (
         <div className="space-y-6">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">{table.name}</h2>
-            {table.comment && <p className="mt-1 text-sm text-gray-500">{table.comment}</p>}
+            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{table.name}</h2>
+            {table.comment && <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{table.comment}</p>}
             {table.schema_name && (
-              <p className="mt-1 text-xs text-gray-400">Schema: {table.schema_name}</p>
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Schema: {table.schema_name}</p>
             )}
           </div>
 
           <section>
-            <h3 className="mb-2 text-sm font-semibold text-gray-700">字段</h3>
-            <div className="rounded-lg border bg-white">
+            <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">字段</h3>
+            <div className="rounded-lg border bg-white dark:border-gray-700 dark:bg-gray-800">
               <ColumnTable columns={table.columns} />
             </div>
           </section>
 
           <section>
-            <h3 className="mb-2 text-sm font-semibold text-gray-700">索引</h3>
-            <div className="rounded-lg border bg-white">
+            <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">索引</h3>
+            <div className="rounded-lg border bg-white dark:border-gray-700 dark:bg-gray-800">
               <IndexTable indexes={table.indexes} />
             </div>
           </section>
 
           <section>
-            <h3 className="mb-2 text-sm font-semibold text-gray-700">外键</h3>
-            <div className="rounded-lg border bg-white">
+            <h3 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">外键</h3>
+            <div className="rounded-lg border bg-white dark:border-gray-700 dark:bg-gray-800">
               <ForeignKeyTable foreignKeys={table.foreign_keys} />
             </div>
           </section>

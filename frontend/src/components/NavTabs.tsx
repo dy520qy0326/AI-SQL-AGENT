@@ -22,7 +22,7 @@ export function NavTabs({ projectId }: NavTabsProps) {
           key={tab.path}
           to={tab.path ? `/projects/${projectId}/${tab.path}` : `/projects/${projectId}`}
           end={tab.path === ''}
-          className="flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium text-gray-500 no-underline transition hover:text-gray-700 aria-current-page:border-blue-600 aria-current-page:text-blue-600"
+          className="flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium text-gray-500 no-underline transition hover:text-gray-700 aria-current-page:border-blue-600 aria-current-page:text-blue-600 dark:text-gray-400 dark:hover:text-gray-200 dark:aria-current-page:border-blue-400 dark:aria-current-page:text-blue-400"
         >
           <tab.icon className="h-4 w-4" />
           {tab.label}

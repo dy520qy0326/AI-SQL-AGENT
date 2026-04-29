@@ -65,7 +65,7 @@ export function VersionsView() {
     <div className="space-y-6">
       {/* Create version button and existing diffs link */}
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold text-gray-800">版本列表</h2>
+        <h2 className="text-base font-semibold text-gray-800 dark:text-gray-200">版本列表</h2>
         <button
           onClick={() => setShowUpload(true)}
           className="flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 cursor-pointer"
@@ -89,7 +89,7 @@ export function VersionsView() {
       )}
 
       {versions.length < 2 && (
-        <div className="rounded-lg border bg-amber-50 px-4 py-3 text-sm text-amber-700">
+        <div className="rounded-lg border bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300">
           需要至少两个版本才能进行对比
         </div>
       )}
@@ -109,16 +109,16 @@ export function VersionsView() {
       )}
 
       {!isLoading && !error && versions.length === 0 && (
-        <div className="py-16 text-center text-sm text-gray-400">
+        <div className="py-16 text-center text-sm text-gray-400 dark:text-gray-500">
           尚未创建版本，点击"创建新版本"上传 SQL
         </div>
       )}
 
       {!isLoading && !error && versions.length > 0 && (
-        <div className="overflow-hidden rounded-lg border bg-white">
+        <div className="overflow-hidden rounded-lg border bg-white dark:border-gray-700 dark:bg-gray-800">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b bg-gray-50 text-xs text-gray-500">
+              <tr className="border-b bg-gray-50 text-xs text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
                 <th className="py-3 pl-4 pr-2 font-medium">版本标签</th>
                 <th className="py-3 px-2 font-medium">表数</th>
                 <th className="py-3 px-2 font-medium">文件 Hash</th>
@@ -128,15 +128,15 @@ export function VersionsView() {
             </thead>
             <tbody>
               {versions.map((v) => (
-                <tr key={v.id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="py-3 pl-4 pr-2 font-medium text-gray-900">{v.version_tag}</td>
-                  <td className="px-2 text-gray-600">{v.tables_count}</td>
-                  <td className="px-2 font-mono text-xs text-gray-400">{v.file_hash?.slice(0, 12)}...</td>
-                  <td className="pr-4 text-xs text-gray-500">{v.created_at ? formatDate(v.created_at) : '-'}</td>
+                <tr key={v.id} className="border-b last:border-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
+                  <td className="py-3 pl-4 pr-2 font-medium text-gray-900 dark:text-gray-100">{v.version_tag}</td>
+                  <td className="px-2 text-gray-600 dark:text-gray-300">{v.tables_count}</td>
+                  <td className="px-2 font-mono text-xs text-gray-400 dark:text-gray-500">{v.file_hash?.slice(0, 12)}...</td>
+                  <td className="pr-4 text-xs text-gray-500 dark:text-gray-400">{v.created_at ? formatDate(v.created_at) : '-'}</td>
                   <td className="pr-4">
                     <button
                       onClick={() => setDeleteId(v.id)}
-                      className="rounded p-1 text-gray-300 hover:text-red-500 cursor-pointer"
+                      className="rounded p-1 text-gray-300 hover:text-red-500 cursor-pointer dark:text-gray-600 dark:hover:text-red-400"
                       title="删除版本"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -152,34 +152,34 @@ export function VersionsView() {
       {/* Create Version Dialog */}
       {showUpload && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold text-gray-900">创建新版本</h3>
+          <div className="w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl dark:border dark:border-gray-700 dark:bg-gray-800">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">创建新版本</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">版本标签（可选）</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">版本标签（可选）</label>
                 <input
                   type="text"
                   value={versionTag}
                   onChange={(e) => setVersionTag(e.target.value)}
                   placeholder="例如：v2.0"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">SQL 内容 *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">SQL 内容 *</label>
                 <textarea
                   value={sqlContent}
                   onChange={(e) => setSqlContent(e.target.value)}
                   placeholder="粘贴新的 DDL SQL..."
                   rows={12}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono outline-none focus:border-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono outline-none focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
                 />
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
                 onClick={() => { setShowUpload(false); setSqlContent(''); setVersionTag('') }}
-                className="rounded-md border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+                className="rounded-md border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 取消
               </button>

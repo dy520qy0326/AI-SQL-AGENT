@@ -21,7 +21,7 @@ export function TablesView() {
           placeholder="搜索表名..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          className="w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-400"
         />
       </div>
 
@@ -39,16 +39,16 @@ export function TablesView() {
       )}
 
       {!isLoading && !error && filtered && filtered.length === 0 && (
-        <div className="py-16 text-center text-sm text-gray-400">
+        <div className="py-16 text-center text-sm text-gray-400 dark:text-gray-500">
           {search ? '没有匹配的表' : '尚未上传 SQL 文件'}
         </div>
       )}
 
       {!isLoading && !error && filtered && filtered.length > 0 && (
-        <div className="overflow-hidden rounded-lg border bg-white">
+        <div className="overflow-hidden rounded-lg border bg-white dark:border-gray-700 dark:bg-gray-800">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b bg-gray-50 text-xs text-gray-500">
+              <tr className="border-b bg-gray-50 text-xs text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
                 <th className="py-3 pl-4 pr-2 font-medium">表名</th>
                 <th className="py-3 px-2 font-medium">字段数</th>
                 <th className="py-3 pr-4 font-medium">注释</th>
@@ -56,18 +56,18 @@ export function TablesView() {
             </thead>
             <tbody>
               {filtered.map((table) => (
-                <tr key={table.id} className="border-b last:border-0 hover:bg-gray-50">
+                <tr key={table.id} className="border-b last:border-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
                   <td className="py-3 pl-4 pr-2">
                     <Link
                       to={`/projects/${id}/tables/${table.id}`}
-                      className="flex items-center gap-1 font-medium text-blue-700 no-underline hover:text-blue-900"
+                      className="flex items-center gap-1 font-medium text-blue-700 no-underline hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                     >
                       {table.name}
                       <ChevronRight className="h-3.5 w-3.5" />
                     </Link>
                   </td>
-                  <td className="px-2 text-gray-600">{table.column_count}</td>
-                  <td className="pr-4 text-gray-500">{table.comment || '-'}</td>
+                  <td className="px-2 text-gray-600 dark:text-gray-300">{table.column_count}</td>
+                  <td className="pr-4 text-gray-500 dark:text-gray-400">{table.comment || '-'}</td>
                 </tr>
               ))}
             </tbody>

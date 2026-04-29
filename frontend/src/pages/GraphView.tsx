@@ -48,10 +48,10 @@ export function GraphView() {
           <button
             onClick={handleCopyMermaid}
             disabled={!mermaidQuery.data}
-            className="flex items-center gap-1.5 rounded-md border bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 rounded-md border bg-white px-3 py-2 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             {copied ? (
-              <Check className="h-3.5 w-3.5 text-green-600" />
+              <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
             ) : (
               <Copy className="h-3.5 w-3.5" />
             )}
@@ -78,7 +78,7 @@ export function GraphView() {
       )}
 
       {!isLoading && !error && !hasData && (
-        <div className="flex items-center justify-center py-20 text-sm text-gray-400">
+        <div className="flex items-center justify-center py-20 text-sm text-gray-400 dark:text-gray-500">
           {type || minConfidence > 0 ? '没有匹配的关系' : '尚未解析出表关系，请先上传 SQL 文件'}
         </div>
       )}

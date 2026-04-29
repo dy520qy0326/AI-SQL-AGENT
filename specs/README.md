@@ -15,3 +15,4 @@
 | [05-frontend-ui](archived/05-frontend-ui/proposal.md) | 前端 UI 开发（React + Vite + TypeScript） | 2026-04-29 |
 | [06-uniform-project-card-height](archived/06-uniform-project-card-height/proposal.md) | 前端 UI — 项目卡片等高 | 2026-04-29 |
 | [07-project-page-size-12](archived/07-project-page-size-12/proposal.md) | 分页 — 每页 12 条 | 2026-04-29 |
+| [08-dark-mode](archived/08-dark-mode/proposal.md) | 暗色模式（Dark Mode） | 2026-04-29 |

@@ -39,21 +39,21 @@ export function ConfirmDialog({
   return (
     <dialog
       ref={dialogRef}
-      className="rounded-lg border p-0 shadow-xl backdrop:bg-black/50 w-full max-w-md"
+      className="rounded-lg border p-0 shadow-xl backdrop:bg-black/50 w-full max-w-md dark:border-gray-700 dark:bg-gray-800"
       onClose={onCancel}
     >
       <div className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+          <button onClick={onCancel} className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 cursor-pointer">
             <X className="h-5 w-5" />
           </button>
         </div>
-        <p className="text-sm text-gray-600 mb-6">{message}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{message}</p>
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="rounded-md border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+            className="rounded-md border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             {cancelLabel}
           </button>

@@ -53,7 +53,7 @@ export function DocsView() {
             )}
             生成文档
           </button>
-          <label className="flex items-center gap-1.5 rounded-md border bg-white px-3 py-2 text-xs text-gray-600 cursor-pointer hover:bg-gray-50">
+          <label className="flex items-center gap-1.5 rounded-md border bg-white px-3 py-2 text-xs text-gray-600 cursor-pointer hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700">
             <Sparkles className="h-3.5 w-3.5 text-purple-500" />
             <span>AI 增强</span>
             <input
@@ -80,16 +80,16 @@ export function DocsView() {
       )}
 
       {!isLoading && !error && docs.length === 0 && (
-        <div className="py-16 text-center text-sm text-gray-400">
+        <div className="py-16 text-center text-sm text-gray-400 dark:text-gray-500">
           尚未生成文档，点击"生成文档"按钮创建
         </div>
       )}
 
       {!isLoading && !error && docs.length > 0 && (
-        <div className="overflow-hidden rounded-lg border bg-white">
+        <div className="overflow-hidden rounded-lg border bg-white dark:border-gray-700 dark:bg-gray-800">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b bg-gray-50 text-xs text-gray-500">
+              <tr className="border-b bg-gray-50 text-xs text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
                 <th className="py-3 pl-4 pr-2 font-medium">标题</th>
                 <th className="py-3 px-2 font-medium">AI</th>
                 <th className="py-3 px-2 font-medium">时间</th>
@@ -98,34 +98,34 @@ export function DocsView() {
             </thead>
             <tbody>
               {docs.map((doc) => (
-                <tr key={doc.id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="py-3 pl-4 pr-2 font-medium text-gray-900">{doc.title}</td>
+                <tr key={doc.id} className="border-b last:border-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50">
+                  <td className="py-3 pl-4 pr-2 font-medium text-gray-900 dark:text-gray-100">{doc.title}</td>
                   <td className="px-2">
                     {doc.ai_enhanced ? (
                       <Sparkles className="h-4 w-4 text-purple-500" />
                     ) : (
-                      <span className="text-gray-300">-</span>
+                      <span className="text-gray-300 dark:text-gray-600">-</span>
                     )}
                   </td>
-                  <td className="px-2 text-xs text-gray-500">{formatDate(doc.created_at)}</td>
+                  <td className="px-2 text-xs text-gray-500 dark:text-gray-400">{formatDate(doc.created_at)}</td>
                   <td className="pr-4">
                     <div className="flex items-center gap-1">
                       <Link
                         to={`/projects/${id}/docs/${doc.id}`}
-                        className="flex items-center gap-1 rounded px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 no-underline"
+                        className="flex items-center gap-1 rounded px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 no-underline dark:text-blue-400 dark:hover:bg-blue-900/30"
                       >
                         <Eye className="h-3.5 w-3.5" />
                         预览
                       </Link>
                       <button
                         onClick={() => handleDownload(doc)}
-                        className="flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 cursor-pointer"
+                        className="flex items-center gap-1 rounded px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 cursor-pointer dark:text-gray-400 dark:hover:bg-gray-700"
                       >
                         <Download className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => setDeleteId(doc.id)}
-                        className="flex items-center gap-1 rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 cursor-pointer"
+                        className="flex items-center gap-1 rounded px-2 py-1 text-xs text-red-500 hover:bg-red-50 cursor-pointer dark:hover:bg-red-900/30"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>

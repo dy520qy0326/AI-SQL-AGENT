@@ -20,13 +20,13 @@ export function VersionSelector({
   loading,
 }: VersionSelectorProps) {
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-white p-4">
+    <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
       <div>
-        <label className="mb-1 block text-xs text-gray-500">旧版本</label>
+        <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">旧版本</label>
         <select
           value={oldVersion}
           onChange={(e) => onOldChange(e.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
         >
           <option value="">选择版本...</option>
           {versions.map((v) => (
@@ -36,13 +36,13 @@ export function VersionSelector({
           ))}
         </select>
       </div>
-      <div className="pb-2 text-gray-400 text-lg">→</div>
+      <div className="pb-2 text-gray-400 text-lg dark:text-gray-500">→</div>
       <div>
-        <label className="mb-1 block text-xs text-gray-500">新版本</label>
+        <label className="mb-1 block text-xs text-gray-500 dark:text-gray-400">新版本</label>
         <select
           value={newVersion}
           onChange={(e) => onNewChange(e.target.value)}
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
         >
           <option value="">选择版本...</option>
           {versions.map((v) => (

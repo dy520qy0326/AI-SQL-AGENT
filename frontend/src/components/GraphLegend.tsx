@@ -1,7 +1,7 @@
 export function GraphLegend() {
   return (
-    <div className="rounded-lg border bg-white p-3 text-xs text-gray-600 shadow-sm">
-      <p className="mb-1.5 font-medium text-gray-700">图例</p>
+    <div className="rounded-lg border bg-white p-3 text-xs text-gray-600 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+      <p className="mb-1.5 font-medium text-gray-700 dark:text-gray-300">图例</p>
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <span className="inline-block h-0.5 w-6 bg-blue-500" />

@@ -25,12 +25,12 @@ export function ProjectLayout() {
   return (
     <Layout>
       <div className="mb-1">
-        <h1 className="text-xl font-bold text-gray-900">{project.name}</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{project.name}</h1>
         {project.description && (
-          <p className="mt-1 text-sm text-gray-500">{project.description}</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{project.description}</p>
         )}
       </div>
-      <div className="mb-6 border-b border-gray-200">
+      <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
         <NavTabs projectId={id!} />
       </div>
       <Outlet />

@@ -140,7 +140,7 @@ export function AiChat() {
   return (
     <div className="flex gap-4" style={{ height: 'calc(100vh - 220px)' }}>
       {/* Sidebar */}
-      <div className="w-56 shrink-0 rounded-lg border bg-white p-3">
+      <div className="w-56 shrink-0 rounded-lg border bg-white p-3 dark:border-gray-700 dark:bg-gray-800">
         <SessionList
           sessions={sessions}
           activeId={activeSessionId}
@@ -151,12 +151,12 @@ export function AiChat() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex flex-1 flex-col rounded-lg border bg-white">
+      <div className="flex flex-1 flex-col rounded-lg border bg-white dark:border-gray-700 dark:bg-gray-800">
         {!hasConversation && !sessionsLoading && (
           <div className="flex flex-1 items-center justify-center">
             <div className="max-w-md text-center">
               <Lightbulb className="mx-auto mb-4 h-10 w-10 text-amber-400" />
-              <p className="mb-4 text-sm text-gray-500">
+              <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
                 输入关于数据库结构的问题，AI 将根据解析结果为你解答
               </p>
               <div className="space-y-2">
@@ -164,7 +164,7 @@ export function AiChat() {
                   <button
                     key={i}
                     onClick={() => handleSend(q)}
-                    className="block w-full rounded-md border px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-50 cursor-pointer"
+                    className="block w-full rounded-md border px-3 py-2 text-left text-sm text-gray-600 hover:bg-gray-50 cursor-pointer dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
                   >
                     {q}
                   </button>
@@ -202,13 +202,13 @@ export function AiChat() {
         )}
 
         {error && (
-          <div className="mx-4 mb-2 flex items-center gap-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">
+          <div className="mx-4 mb-2 flex items-center gap-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-300">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
           </div>
         )}
 
-        <div className="border-t p-3">
+        <div className="border-t p-3 dark:border-gray-700">
           <ChatInput
             onSend={handleSend}
             onStop={handleStop}
