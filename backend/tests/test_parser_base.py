@@ -365,7 +365,138 @@ class TestForeignKeyParsing:
         assert result.tables[0].foreign_keys == []
 
 
-# ── Error Handling (Task 8) ──────────────────────────────────────────────────
+# ── Index Parsing (Task 5) ────────────────────────────────────────────────────
+
+
+class TestIndexParsing:
+    def test_simple_index(self, parser):
+        """INDEX idx_name (col) → name+columns extracted."""
+        sql = "CREATE TABLE t (id INT, INDEX idx_name (col))"
+        result = parser.parse(sql)
+        idx = result.tables[0].indexes
+        assert len(idx) == 1
+        assert idx[0].name == "idx_name"
+        assert idx[0].unique is False
+        assert idx[0].columns == ["col"]
+
+    def test_unique_index(self, parser):
+        """UNIQUE INDEX uq_email (email) → unique=True."""
+        sql = "CREATE TABLE t (id INT, UNIQUE INDEX uq_email (email))"
+        result = parser.parse(sql)
+        idx = result.tables[0].indexes
+        assert len(idx) == 1
+        assert idx[0].name == "uq_email"
+        assert idx[0].unique is True
+        assert idx[0].columns == ["email"]
+
+    def test_key_as_index_synonym(self, parser):
+        """KEY keyword treated as INDEX synonym."""
+        sql = "CREATE TABLE t (id INT, KEY idx_key (col))"
+        result = parser.parse(sql)
+        idx = result.tables[0].indexes
+        assert len(idx) == 1
+        assert idx[0].name == "idx_key"
+        assert idx[0].unique is False
+        assert idx[0].columns == ["col"]
+
+    def test_unique_key(self, parser):
+        """UNIQUE KEY treated as unique index."""
+        sql = "CREATE TABLE t (id INT, UNIQUE KEY uq_name (name))"
+        result = parser.parse(sql)
+        idx = result.tables[0].indexes
+        assert len(idx) == 1
+        assert idx[0].name == "uq_name"
+        assert idx[0].unique is True
+        assert idx[0].columns == ["name"]
+
+    def test_multi_column_index(self, parser):
+        """Multi-column index preserves column order."""
+        sql = "CREATE TABLE t (a INT, b INT, c INT, INDEX idx_abc (a, c, b))"
+        result = parser.parse(sql)
+        idx = result.tables[0].indexes
+        assert len(idx) == 1
+        assert idx[0].columns == ["a", "c", "b"]
+
+    def test_unnamed_index(self, parser):
+        """INDEX without a name."""
+        sql = "CREATE TABLE t (id INT, INDEX (col))"
+        result = parser.parse(sql)
+        idx = result.tables[0].indexes
+        assert len(idx) == 1
+        assert idx[0].name == ""
+        assert idx[0].unique is False
+        assert idx[0].columns == ["col"]
+
+    def test_unnamed_unique(self, parser):
+        """UNIQUE without a name."""
+        sql = "CREATE TABLE t (id INT, UNIQUE (email))"
+        result = parser.parse(sql)
+        idx = result.tables[0].indexes
+        assert len(idx) == 1
+        assert idx[0].name == ""
+        assert idx[0].unique is True
+        assert idx[0].columns == ["email"]
+
+    def test_multiple_indexes(self, parser):
+        """Multiple indexes all extracted."""
+        sql = (
+            "CREATE TABLE t (\n"
+            "  id INT,\n"
+            "  name VARCHAR(50),\n"
+            "  email VARCHAR(100),\n"
+            "  INDEX idx_name (name),\n"
+            "  UNIQUE INDEX uq_email (email),\n"
+            "  INDEX (id)\n"
+            ")"
+        )
+        result = parser.parse(sql)
+        idx = result.tables[0].indexes
+        assert len(idx) == 3
+        assert idx[0].name == "idx_name"
+        assert idx[0].unique is False
+        assert idx[1].name == "uq_email"
+        assert idx[1].unique is True
+        assert idx[1].columns == ["email"]
+        assert idx[2].name == ""
+        assert idx[2].unique is False
+        assert idx[2].columns == ["id"]
+
+    def test_indexes_with_fk_and_pk(self, parser):
+        """Indexes coexist with FKs and PKs."""
+        sql = (
+            "CREATE TABLE t (\n"
+            "  id INT AUTO_INCREMENT PRIMARY KEY,\n"
+            "  user_id INT NOT NULL,\n"
+            "  email VARCHAR(100),\n"
+            "  UNIQUE INDEX uq_email (email),\n"
+            "  INDEX idx_user_id (user_id),\n"
+            "  FOREIGN KEY (user_id) REFERENCES users(id)\n"
+            ")"
+        )
+        result = parser.parse(sql)
+        t = result.tables[0]
+        assert len(t.indexes) == 2
+        assert t.indexes[0].name == "uq_email"
+        assert t.indexes[0].unique is True
+        assert t.indexes[1].name == "idx_user_id"
+        assert t.indexes[1].unique is False
+        assert len(t.foreign_keys) == 1
+        assert t.columns[0].primary_key is True
+
+    def test_no_indexes(self, parser):
+        """Table without indexes returns empty list."""
+        result = parser.parse("CREATE TABLE t (id INT)")
+        assert result.tables[0].indexes == []
+
+    def test_constraint_unique(self, parser):
+        """CONSTRAINT name UNIQUE (col) extracted as unique index."""
+        sql = "CREATE TABLE t (id INT, CONSTRAINT uq_email UNIQUE (email))"
+        result = parser.parse(sql)
+        idx = result.tables[0].indexes
+        assert len(idx) == 1
+        assert idx[0].name == "uq_email"
+        assert idx[0].unique is True
+        assert idx[0].columns == ["email"]
 
 
 class TestErrorHandling:

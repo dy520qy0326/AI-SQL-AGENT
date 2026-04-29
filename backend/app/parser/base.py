@@ -5,7 +5,7 @@ from typing import Optional
 import sqlglot
 from sqlglot import exp
 
-from app.parser.models import ParseResult, ParseError, Table, Column, ForeignKey as FKModel
+from app.parser.models import ParseResult, ParseError, Table, Column, Index, ForeignKey as FKModel
 from app.parser.dialect import detect_dialect
 
 
@@ -109,9 +109,10 @@ class BaseParser(ABC):
             if isinstance(db, exp.Identifier):
                 schema_name = db.name
 
-        # Extract columns, foreign keys, and apply table-level constraints
+        # Extract columns, foreign keys, indexes, and apply table-level constraints
         columns: list[Column] = []
         foreign_keys: list[FKModel] = []
+        indexes: list[Index] = []
 
         for expr in schema.args.get("expressions") or []:
             if isinstance(expr, exp.ColumnDef):
@@ -125,20 +126,57 @@ class BaseParser(ABC):
                 fk = self._extract_table_fk(expr)
                 if fk:
                     foreign_keys.append(fk)
+            elif isinstance(expr, exp.IndexColumnConstraint):
+                indexes.append(self._extract_index(expr))
+            elif isinstance(expr, exp.UniqueColumnConstraint):
+                indexes.append(self._extract_unique_index(expr))
             elif isinstance(expr, exp.Constraint):
                 # CONSTRAINT fk_name FOREIGN KEY (...) REFERENCES ...
+                # CONSTRAINT name UNIQUE (col)  — also can contain UNIQUE
                 for inner in expr.args.get("expressions") or []:
                     if isinstance(inner, exp.ForeignKey):
                         fk = self._extract_table_fk(inner)
                         if fk:
                             foreign_keys.append(fk)
+                    elif isinstance(inner, exp.UniqueColumnConstraint):
+                        indexes.append(self._extract_unique_index(inner, prefix=expr.this.name))
 
         return Table(
             name=table_name,
             schema_=schema_name,
             columns=columns,
+            indexes=indexes,
             foreign_keys=foreign_keys,
         )
+
+    def _extract_index(self, index_expr: exp.IndexColumnConstraint) -> Index:
+        """Extract an Index model from an IndexColumnConstraint.
+
+        Handles: INDEX name (col), KEY name (col), INDEX (col)
+        """
+        name_node = index_expr.args.get("this")
+        name = name_node.name if name_node else ""
+        columns = [e.name for e in (index_expr.args.get("expressions") or [])]
+        return Index(name=name, unique=False, columns=columns)
+
+    @staticmethod
+    def _extract_unique_index(
+        unique_expr: exp.UniqueColumnConstraint, prefix: str = ""
+    ) -> Index:
+        """Extract an Index model from a UniqueColumnConstraint.
+
+        Handles: UNIQUE INDEX name (col), UNIQUE (col),
+                 CONSTRAINT name UNIQUE (col)
+        """
+        inner = unique_expr.args.get("this")
+        name = prefix
+        columns: list[str] = []
+        if isinstance(inner, exp.Schema):
+            name_node = inner.this
+            if name_node and hasattr(name_node, "name"):
+                name = name_node.name if not prefix else prefix
+            columns = [e.name for e in (inner.args.get("expressions") or [])]
+        return Index(name=name, unique=True, columns=columns)
 
     def _extract_column(self, column_def: exp.ColumnDef) -> Column:
         """Extract a Column model from a sqlglot ColumnDef expression."""

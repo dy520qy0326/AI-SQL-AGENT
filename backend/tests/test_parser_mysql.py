@@ -351,10 +351,22 @@ class TestMySqlIntegration:
         assert fks[0].ref_table == "sys_users"
         assert fks[0].ref_columns == ["id"]
 
-    def test_indexes_not_implemented_yet(self, parser):
-        """Verify indexes are not yet extracted (index parse is a later task)."""
-        sql = "CREATE TABLE t (id INT, INDEX idx_id (id))"
+    def test_indexes_extracted(self, parser):
+        """Inline INDEX/KEY/UNIQUE in MySQL DDL are now extracted."""
+        sql = (
+            "CREATE TABLE t (\n"
+            "  id INT,\n"
+            "  name VARCHAR(50),\n"
+            "  email VARCHAR(100),\n"
+            "  INDEX idx_name (name),\n"
+            "  UNIQUE KEY uq_email (email),\n"
+            "  KEY idx_id (id)\n"
+            ")"
+        )
         result = parser.parse(sql)
-        # Index parsing is not in scope for base parser currently
-        # This just confirms it doesn't crash
-        assert len(result.tables) == 1
+        idx = result.tables[0].indexes
+        assert len(idx) == 3
+        assert idx[0].name == "idx_name"
+        assert idx[1].name == "uq_email"
+        assert idx[1].unique is True
+        assert idx[2].name == "idx_id"
