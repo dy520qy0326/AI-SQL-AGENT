@@ -8,29 +8,32 @@ interface GraphParams {
   projectId: string
   type?: string
   minConfidence?: number
+  tableIds?: string[]
 }
 
-export function useGraph({ projectId, type, minConfidence = 0 }: GraphParams) {
+export function useGraph({ projectId, type, minConfidence = 0, tableIds }: GraphParams) {
   const params = new URLSearchParams()
   if (type) params.set('type', type)
   if (minConfidence > 0) params.set('min_confidence', String(minConfidence))
+  if (tableIds && tableIds.length > 0) params.set('table_ids', tableIds.join(','))
 
   const query = params.toString() ? `?${params.toString()}` : ''
 
   return useQuery({
-    queryKey: ['graph', projectId, { type, minConfidence }],
+    queryKey: ['graph', projectId, { type, minConfidence, tableIds }],
     queryFn: () => api.get<GraphData>(`/api/projects/${projectId}/graph${query}`),
     enabled: !!projectId,
   })
 }
 
-export function useMermaid(projectId: string, minConfidence = 0) {
+export function useMermaid(projectId: string, minConfidence = 0, tableIds?: string[]) {
   const params = new URLSearchParams()
   if (minConfidence > 0) params.set('min_confidence', String(minConfidence))
+  if (tableIds && tableIds.length > 0) params.set('table_ids', tableIds.join(','))
   const query = params.toString() ? `?${params.toString()}` : ''
 
   return useQuery({
-    queryKey: ['mermaid', projectId],
+    queryKey: ['mermaid', projectId, { minConfidence, tableIds }],
     queryFn: async () => {
       const res = await fetch(`${BASE}/api/projects/${projectId}/mermaid${query}`)
       if (!res.ok) {

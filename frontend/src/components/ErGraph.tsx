@@ -1,5 +1,6 @@
-import { useMemo, useCallback, useRef } from 'react'
+import { useMemo, useCallback, useRef, useEffect } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
+import { forceManyBody, forceY } from 'd3-force'
 import type { GraphData, GraphNode } from '@/types/graph'
 import { useTheme } from '@/hooks/useTheme'
 
@@ -31,6 +32,15 @@ export function ErGraph({ data, onNodeClick }: ErGraphProps) {
       label: e.label || e.type,
     })),
   }), [data])
+
+  // Configure force simulation for left-right distribution
+  useEffect(() => {
+    const graph = graphRef.current
+    if (!graph) return
+    graph.d3Force('charge', forceManyBody().strength(-400))
+    graph.d3Force('y', forceY(300).strength(0.15))
+    graph.d3ReheatSimulation()
+  }, [])
 
   const handleNodeClick = useCallback((node: any) => {
     onNodeClick?.(node as unknown as GraphNode)

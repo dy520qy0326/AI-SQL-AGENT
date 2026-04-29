@@ -9,10 +9,23 @@ async def build_graph(
     db: AsyncSession,
     min_confidence: float = 0.0,
     type_filter: str | None = None,
+    table_ids: set[str] | None = None,
 ) -> tuple[list[GraphNode], list[GraphEdge]]:
     repo = Repository(db)
     tables = await repo.get_tables(project_id)
     relations = await repo.get_relations(project_id, type_filter=type_filter, min_confidence=min_confidence)
+
+    # 1-hop expansion: if table_ids specified, include neighbor tables
+    if table_ids is not None:
+        neighbor_ids = set()
+        for r in relations:
+            if r.source_table_id in table_ids:
+                neighbor_ids.add(r.target_table_id)
+            if r.target_table_id in table_ids:
+                neighbor_ids.add(r.source_table_id)
+        expanded = table_ids | neighbor_ids
+        tables = [t for t in tables if t.id in expanded]
+        relations = [r for r in relations if r.source_table_id in expanded and r.target_table_id in expanded]
 
     # Collect all FK column names per table for marking
     fk_columns: dict[str, set[str]] = {}  # table_id → set of column names

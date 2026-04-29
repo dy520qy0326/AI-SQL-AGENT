@@ -11,15 +11,32 @@ MERMAID_TEMPLATE = """erDiagram
 # Column names that match these keywords cause parse errors.
 _KEYWORDS = frozenset({"pk", "fk"})
 
+# Limit columns shown per table in ER diagram to prevent one wide table
+# from dominating the layout when there are few tables in the view.
+MAX_COLS_PER_TABLE = 15
+
 
 async def build_mermaid(
     project_id: str,
     db: AsyncSession,
     min_confidence: float = 0.0,
+    table_ids: set[str] | None = None,
 ) -> str:
     repo = Repository(db)
     tables = await repo.get_tables(project_id)
     relations = await repo.get_relations(project_id, min_confidence=min_confidence)
+
+    # 1-hop expansion: if table_ids specified, include neighbor tables
+    if table_ids is not None:
+        neighbor_ids = set()
+        for r in relations:
+            if r.source_table_id in table_ids:
+                neighbor_ids.add(r.target_table_id)
+            if r.target_table_id in table_ids:
+                neighbor_ids.add(r.source_table_id)
+        expanded = table_ids | neighbor_ids
+        tables = [t for t in tables if t.id in expanded]
+        relations = [r for r in relations if r.source_table_id in expanded and r.target_table_id in expanded]
 
     tmap = {t.id: t for t in tables}
 
@@ -31,8 +48,12 @@ async def build_mermaid(
     # Build entities
     entity_lines = []
     for t in tables:
-        lines = [f'  {_mermaid_id(t.id)}["{t.name}"] {{']
-        for c in (t.columns or []):
+        cols = t.columns or []
+        shown = cols[:MAX_COLS_PER_TABLE]
+        hidden = len(cols) - len(shown)
+        display = t.name if hidden == 0 else f"{t.name} ({len(cols)} cols, {hidden} hidden)"
+        lines = [f'  {_mermaid_id(t.id)}["{display}"] {{']
+        for c in shown:
             suffix = ""
             if c.is_primary_key:
                 suffix = " PK"

@@ -1,7 +1,7 @@
 To videos, just a moment that. Shura, we are 4 missions. No. ---
 name: 09-embed-mermaid-er
 title: 内嵌 Mermaid ER 图渲染
-status: REVIEWED
+status: ARCHIVED
 created: 2026-04-29
 ---
 

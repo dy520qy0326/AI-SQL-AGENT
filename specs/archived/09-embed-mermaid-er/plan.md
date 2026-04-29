@@ -1,7 +1,7 @@
 ---
 name: 09-embed-mermaid-er
 title: 内嵌 Mermaid ER 图渲染 — 技术方案
-status: REVIEWED
+status: ARCHIVED
 created: 2026-04-29
 ---
 

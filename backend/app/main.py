@@ -7,6 +7,7 @@ from app.api.ai import router as ai_router
 from app.api.diff import router as diff_router
 from app.api.graph import router as graph_router
 from app.api.projects import router as projects_router
+from app.api.query_relations import router as query_relations_router
 from app.api.relations import router as relations_router
 from app.api.sessions import router as sessions_router
 from app.api.tables import router as tables_router
@@ -36,6 +37,7 @@ app.include_router(projects_router)
 app.include_router(tables_router)
 app.include_router(diff_router)
 app.include_router(relations_router)
+app.include_router(query_relations_router)
 app.include_router(graph_router)
 app.include_router(ai_router)
 app.include_router(nl_router)

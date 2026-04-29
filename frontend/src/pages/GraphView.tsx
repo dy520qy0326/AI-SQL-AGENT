@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useParams } from 'react-router'
 import { Loader2, AlertCircle, Copy, Check, GitBranch, Table } from 'lucide-react'
 import { useGraph, useMermaid } from '@/hooks/useGraph'
 import { ErGraph } from '@/components/ErGraph'
 import { MermaidDiagram } from '@/components/MermaidDiagram'
 import { RelationFilters } from '@/components/RelationFilters'
+import { TableSelect } from '@/components/TableSelect'
 import { GraphLegend } from '@/components/GraphLegend'
 import { useTheme } from '@/hooks/useTheme'
 import type { GraphNode } from '@/types/graph'
@@ -15,18 +16,27 @@ export function GraphView() {
   const { id } = useParams<{ id: string }>()
   const [type, setType] = useState('')
   const [minConfidence, setMinConfidence] = useState(0)
+  const [tableIds, setTableIds] = useState<string[]>([])
   const [viewMode, setViewMode] = useState<ViewMode>('graph')
   const [copied, setCopied] = useState(false)
   const { resolved } = useTheme()
   const isDark = resolved === 'dark'
 
-  const { data: graphData, isLoading, error } = useGraph({ projectId: id!, type: type || undefined, minConfidence })
+  // Reset table selection when project changes
+  useEffect(() => { setTableIds([]) }, [id])
+
+  const { data: graphData, isLoading, error } = useGraph({
+    projectId: id!,
+    type: type || undefined,
+    minConfidence,
+    tableIds: tableIds.length > 0 ? tableIds : undefined,
+  })
 
   const handleNodeClick = useCallback((node: GraphNode) => {
     window.open(`/projects/${id}/tables/${node.id}`, '_self')
   }, [id])
 
-  const mermaidQuery = useMermaid(id!, minConfidence)
+  const mermaidQuery = useMermaid(id!, minConfidence, tableIds.length > 0 ? tableIds : undefined)
 
   const handleCopyMermaid = async () => {
     if (!mermaidQuery.data) return
@@ -49,6 +59,11 @@ export function GraphView() {
           onTypeChange={setType}
           minConfidence={minConfidence}
           onConfidenceChange={setMinConfidence}
+        />
+        <TableSelect
+          projectId={id!}
+          value={tableIds}
+          onChange={setTableIds}
         />
         <div className="flex items-center gap-3">
           <div className="flex overflow-hidden rounded-md border dark:border-gray-600">

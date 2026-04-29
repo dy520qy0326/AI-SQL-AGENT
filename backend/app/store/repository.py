@@ -196,6 +196,59 @@ class Repository:
         await self.db.flush()
         return orm_relations
 
+    async def relation_exists(
+        self,
+        project_id: str,
+        source_table_id: str,
+        target_table_id: str,
+        source_columns: list[str],
+        target_columns: list[str],
+    ) -> bool:
+        """Check if an identical relation already exists in the project."""
+        from sqlalchemy import and_
+
+        result = await self.db.execute(
+            select(Relation).where(
+                and_(
+                    Relation.project_id == project_id,
+                    Relation.source_table_id == source_table_id,
+                    Relation.target_table_id == target_table_id,
+                    Relation.source_columns == source_columns,
+                    Relation.target_columns == target_columns,
+                )
+            )
+        )
+        return result.scalar_one_or_none() is not None
+
+    async def save_query_relations(self, project_id: str, relations: list[RelationData]) -> list[Relation]:
+        """Incrementally save relations (append, don't delete existing)."""
+        orm_relations = []
+        for r in relations:
+            # Skip if already exists
+            if await self.relation_exists(
+                project_id,
+                r.source_table_id,
+                r.target_table_id,
+                r.source_columns,
+                r.target_columns,
+            ):
+                continue
+            rel = Relation(
+                project_id=project_id,
+                source_table_id=r.source_table_id,
+                source_columns=r.source_columns,
+                target_table_id=r.target_table_id,
+                target_columns=r.target_columns,
+                relation_type=r.relation_type,
+                confidence=r.confidence,
+                source=r.source,
+            )
+            self.db.add(rel)
+            orm_relations.append(rel)
+
+        await self.db.flush()
+        return orm_relations
+
     async def get_relations(
         self,
         project_id: str,
