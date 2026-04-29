@@ -1,13 +1,14 @@
 export interface GraphNode {
   id: string
-  name: string
+  label: string
   schema_name?: string
   column_count: number
 }
 
 export interface GraphEdge {
-  source: string
-  target: string
+  id: string
+  from: string
+  to: string
   type: string
   confidence: number
   label?: string

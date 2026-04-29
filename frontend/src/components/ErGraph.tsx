@@ -22,11 +22,10 @@ export function ErGraph({ data, onNodeClick }: ErGraphProps) {
   const graphData = useMemo(() => ({
     nodes: data.nodes.map((n) => ({
       ...n,
-      id: n.name,
     })),
     links: data.edges.map((e) => ({
-      source: e.source,
-      target: e.target,
+      source: e.from,
+      target: e.to,
       type: e.type,
       confidence: e.confidence,
       label: e.label || e.type,
@@ -96,7 +95,7 @@ export function ErGraph({ data, onNodeClick }: ErGraphProps) {
       <ForceGraph2D
         ref={graphRef}
         graphData={graphData}
-        nodeLabel="name"
+        nodeLabel="label"
         nodeAutoColorBy="schema_name"
         backgroundColor={isDark ? '#1f2937' : '#ffffff'}
         nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
