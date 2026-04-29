@@ -5,8 +5,12 @@ from sqlalchemy import func, select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import (
+    AICache,
     Column as ColumnModel,
+    ConversationMessage,
+    ConversationSession,
     ForeignKeyModel,
+    GeneratedDoc,
     Index as IndexModel,
     Project,
     Relation,
@@ -214,3 +218,150 @@ class Repository:
             .where(Table.project_id == project_id)
         )
         return list(result.scalars().all())
+
+    # ── Session CRUD ─────────────────────────────────────────
+
+    async def create_session(self, project_id: str, title: str | None = None) -> ConversationSession:
+        session = ConversationSession(project_id=project_id, title=title)
+        self.db.add(session)
+        await self.db.flush()
+        return session
+
+    async def get_session(self, session_id: str) -> ConversationSession | None:
+        result = await self.db.execute(
+            select(ConversationSession).where(ConversationSession.id == session_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def list_project_sessions(self, project_id: str) -> list[ConversationSession]:
+        result = await self.db.execute(
+            select(ConversationSession)
+            .where(ConversationSession.project_id == project_id)
+            .order_by(ConversationSession.updated_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def delete_session(self, session_id: str) -> bool:
+        result = await self.db.execute(
+            delete(ConversationSession).where(ConversationSession.id == session_id)
+        )
+        await self.db.flush()
+        return result.rowcount > 0
+
+    # ── Message CRUD ─────────────────────────────────────────
+
+    async def add_message(
+        self,
+        session_id: str,
+        role: str,
+        content: str,
+        sources: list | None = None,
+    ) -> ConversationMessage:
+        msg = ConversationMessage(session_id=session_id, role=role, content=content, sources=sources)
+        self.db.add(msg)
+        await self.db.flush()
+        return msg
+
+    async def get_messages(self, session_id: str, limit: int = 20) -> list[ConversationMessage]:
+        result = await self.db.execute(
+            select(ConversationMessage)
+            .where(ConversationMessage.session_id == session_id)
+            .order_by(ConversationMessage.created_at.asc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
+    # ── Cache CRUD ───────────────────────────────────────────
+
+    async def get_cached(self, cache_key: str) -> dict | None:
+        from datetime import datetime, timezone
+
+        result = await self.db.execute(
+            select(AICache).where(AICache.cache_key == cache_key)
+        )
+        row = result.scalar_one_or_none()
+        if row is None:
+            return None
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        if row.expires_at < now:
+            return None
+        return row.response
+
+    async def set_cache(
+        self,
+        cache_key: str,
+        prompt_hash: str,
+        schema_hash: str,
+        response: dict,
+        ttl_hours: int = 24,
+    ) -> None:
+        from datetime import datetime, timedelta, timezone
+
+        now = datetime.now(timezone.utc)
+        row = AICache(
+            cache_key=cache_key,
+            prompt_hash=prompt_hash,
+            schema_hash=schema_hash,
+            response=response,
+            created_at=now,
+            expires_at=now + timedelta(hours=ttl_hours),
+        )
+        self.db.add(row)
+        await self.db.flush()
+
+    async def clear_all_cache(self) -> int:
+        result = await self.db.execute(delete(AICache))
+        await self.db.flush()
+        return result.rowcount
+
+    async def delete_expired_cache(self) -> int:
+        from datetime import datetime, timezone
+
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
+        result = await self.db.execute(
+            delete(AICache).where(AICache.expires_at < now)
+        )
+        await self.db.flush()
+        return result.rowcount
+
+    # ── Doc CRUD ─────────────────────────────────────────────
+
+    async def create_doc(
+        self,
+        project_id: str,
+        doc_type: str,
+        title: str,
+        content: str,
+        ai_enhanced: bool = False,
+    ) -> GeneratedDoc:
+        doc = GeneratedDoc(
+            project_id=project_id,
+            doc_type=doc_type,
+            title=title,
+            content=content,
+            ai_enhanced=ai_enhanced,
+        )
+        self.db.add(doc)
+        await self.db.flush()
+        return doc
+
+    async def list_docs(self, project_id: str) -> list[GeneratedDoc]:
+        result = await self.db.execute(
+            select(GeneratedDoc)
+            .where(GeneratedDoc.project_id == project_id)
+            .order_by(GeneratedDoc.created_at.desc())
+        )
+        return list(result.scalars().all())
+
+    async def get_doc(self, doc_id: str) -> GeneratedDoc | None:
+        result = await self.db.execute(
+            select(GeneratedDoc).where(GeneratedDoc.id == doc_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def delete_doc(self, doc_id: str) -> bool:
+        result = await self.db.execute(
+            delete(GeneratedDoc).where(GeneratedDoc.id == doc_id)
+        )
+        await self.db.flush()
+        return result.rowcount > 0

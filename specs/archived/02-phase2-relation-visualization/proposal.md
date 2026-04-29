@@ -1,7 +1,7 @@
 ---
 name: 02-phase2-relation-visualization
 title: Phase 2 — 关系增强与可视化
-status: ACTIVE
+status: ARCHIVED
 created: 2026-04-29
 ---
 

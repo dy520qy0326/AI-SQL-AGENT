@@ -30,6 +30,12 @@ class Project(Base):
         "Relation", cascade="all, delete-orphan", lazy="selectin",
         foreign_keys="Relation.project_id",
     )
+    sessions: Mapped[list["ConversationSession"]] = relationship(
+        "ConversationSession", cascade="all, delete-orphan", lazy="selectin",
+    )
+    docs: Mapped[list["GeneratedDoc"]] = relationship(
+        "GeneratedDoc", cascade="all, delete-orphan", lazy="selectin",
+    )
 
 
 class Table(Base):
@@ -98,3 +104,52 @@ class Relation(Base):
     relation_type: Mapped[str] = mapped_column(String(50), nullable=False)
     confidence: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
     source: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+
+
+class ConversationSession(Base):
+    __tablename__ = "conversation_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id", ondelete="CASCADE"))
+    title: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=_now, onupdate=_now)
+
+    messages: Mapped[list["ConversationMessage"]] = relationship(
+        "ConversationMessage", cascade="all, delete-orphan", lazy="selectin",
+    )
+
+
+class ConversationMessage(Base):
+    __tablename__ = "conversation_messages"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    session_id: Mapped[str] = mapped_column(String(36), ForeignKey("conversation_sessions.id", ondelete="CASCADE"))
+    role: Mapped[str] = mapped_column(String(20), nullable=False)
+    content: Mapped[str] = mapped_column(String, nullable=False)
+    sources: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
+class AICache(Base):
+    __tablename__ = "ai_cache"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    cache_key: Mapped[str] = mapped_column(String(128), unique=True, index=True, nullable=False)
+    prompt_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    schema_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    response: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+
+class GeneratedDoc(Base):
+    __tablename__ = "generated_docs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    project_id: Mapped[str] = mapped_column(String(36), ForeignKey("projects.id", ondelete="CASCADE"))
+    doc_type: Mapped[str] = mapped_column(String(20), nullable=False, default="markdown")
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    content: Mapped[str] = mapped_column(String, nullable=False)
+    ai_enhanced: Mapped[bool] = mapped_column(default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
